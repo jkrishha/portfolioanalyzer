@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Risk Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#07080b; --bg1:#0c0e14; --bg2:#111420; --bg3:#171b28;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
+  --gold:#c9a84c; --green:#22c55e; --red:#ef4444; --blue:#60a5fa;
+  --orange:#f97316; --purple:#a78bfa;
+  --muted:rgba(255,255,255,0.35); --text:rgba(255,255,255,0.88);
+  --text2:rgba(255,255,255,0.5);
+  --serif:'DM Serif Display',serif; --sans:'Syne',sans-serif;
+  --mono:'JetBrains Mono',monospace; --r:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(201,168,76,.022) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(201,168,76,.022) 1px,transparent 1px);
+  background-size:52px 52px;pointer-events:none}
+body::after{content:'';position:fixed;top:-20%;left:50%;transform:translateX(-50%);
+  width:70vw;height:50vh;
+  background:radial-gradient(ellipse,rgba(201,168,76,.05) 0%,transparent 68%);
+  pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:1380px;margin:0 auto;padding:0 2rem 6rem}
+
+/* HEADER */
+header{display:flex;align-items:flex-end;justify-content:space-between;
+  padding:2.8rem 0 2.2rem;border-bottom:1px solid var(--border);margin-bottom:2rem}
+.hd-title{font-family:var(--serif);font-size:clamp(1.9rem,3.6vw,2.9rem);
+  line-height:1;letter-spacing:-.02em;color:#fff}
+.hd-title em{font-style:italic;color:var(--gold)}
+.hd-sub{font-family:var(--mono);font-size:.67rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text2);margin-top:.4rem}
+.hd-pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.62rem;
+  letter-spacing:.07em;text-transform:uppercase;background:rgba(201,168,76,.07);
+  border:1px solid rgba(201,168,76,.2);color:var(--gold);padding:5px 12px;border-radius:2px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:350px 1fr;gap:1.5rem;align-items:start}
+
+/* TABS */
+.tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem}
+.tab-btn{padding:8px 18px;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text2);background:none;border:none;
+  cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* PANEL */
+.panel{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ph{display:flex;align-items:center;justify-content:space-between;
+  padding:.8rem 1.1rem;background:var(--bg2);border-bottom:1px solid var(--border)}
+.ph-title{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gold)}
+.pb{padding:1.1rem}
+
+/* INPUTS */
+.fi{background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  font-family:var(--sans);font-size:.8rem;padding:7px 10px;border-radius:3px;
+  outline:none;width:100%;transition:border-color .15s}
+.fi:focus{border-color:rgba(201,168,76,.45)}
+.fi::placeholder{color:var(--muted)}
+.wi{background:var(--bg3);border:1px solid var(--border);color:var(--gold);
+  font-family:var(--mono);font-size:.8rem;padding:7px 8px;border-radius:3px;
+  text-align:center;outline:none;width:100%;transition:border-color .15s;
+  -moz-appearance:textfield}
+.wi:focus{border-color:rgba(201,168,76,.45)}
+.wi::-webkit-outer-spin-button,.wi::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* ASSET ROWS */
+.asset-hdr{display:grid;grid-template-columns:1fr 60px 26px;gap:6px;margin-bottom:6px}
+.asset-hdr span{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text2)}
+.asset-hdr span:nth-child(2){text-align:center}
+.asset-row{display:grid;grid-template-columns:1fr 60px 26px;gap:6px;margin-bottom:6px}
+.btn-rm{width:26px;height:34px;background:none;border:1px solid var(--border);
+  color:var(--text2);border-radius:3px;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:all .15s}
+.btn-rm:hover{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.08)}
+.btn-add{width:100%;padding:7px;background:none;border:1px dashed var(--border2);
+  color:var(--text2);font-family:var(--sans);font-size:.75rem;border-radius:3px;
+  cursor:pointer;transition:all .15s;margin-top:4px}
+.btn-add:hover{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.04)}
+
+/* WEIGHT BAR */
+.wstack{margin:1rem 0 .5rem}
+.wstack-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.wchip{font-family:var(--mono);font-size:.57rem;font-weight:500;
+  padding:2px 7px;border-radius:2px;color:#000}
+.wbar{height:5px;border-radius:2px;overflow:hidden;display:flex;background:var(--bg3)}
+.wseg{height:100%;transition:width .35s ease}
+.wtotal{font-family:var(--mono);font-size:.7rem;text-align:right;margin-top:4px;color:var(--text2)}
+.wtotal.ok{color:var(--green)}.wtotal.over{color:var(--red)}
+
+/* CTA */
+.cta{width:100%;padding:13px;
+  background:linear-gradient(135deg,#c9a84c 0%,#9e7232 100%);
+  color:#000;font-family:var(--sans);font-size:.84rem;font-weight:700;
+  border:none;border-radius:4px;cursor:pointer;letter-spacing:.05em;
+  text-transform:uppercase;transition:all .2s;margin-top:1rem}
+.cta:hover{transform:translateY(-1px);box-shadow:0 10px 28px rgba(201,168,76,.28)}
+.cta:active{transform:translateY(0)}.cta.busy{opacity:.65;cursor:wait}
+
+/* SETTINGS LINE */
+.sline{display:flex;align-items:center;justify-content:space-between;
+  padding:7px 0;border-top:1px solid var(--border);font-size:.75rem;color:var(--text2)}
+.sv{font-family:var(--mono);color:var(--gold)}
+.sline input[type=range]{width:80px;height:3px;-webkit-appearance:none;
+  background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+.sline input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+  width:12px;height:12px;background:var(--gold);border-radius:50%}
+.sline input[type=number]{background:var(--bg3);border:1px solid var(--border);
+  color:var(--gold);font-family:var(--mono);font-size:.72rem;
+  padding:3px 8px;border-radius:2px;width:100px;text-align:right;
+  outline:none;-moz-appearance:textfield}
+.sline input[type=number]::-webkit-outer-spin-button,
+.sline input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* METRICS GRID */
+.mcards{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);
+  border-radius:var(--r);overflow:hidden;border:1px solid var(--border)}
+.mcard{background:var(--bg1);padding:1rem 1.1rem;position:relative;transition:background .2s}
+.mcard:hover{background:var(--bg2)}
+.mcard::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.mcard.pos::after{background:var(--green)}.mcard.neg::after{background:var(--red)}
+.mcard.neu::after{background:var(--gold)}
+.ml{font-family:var(--mono);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text2);margin-bottom:.4rem}
+.mv{font-family:var(--serif);font-size:1.85rem;line-height:1;color:#fff}
+.md{font-family:var(--mono);font-size:.61rem;margin-top:5px;display:flex;align-items:center;gap:4px}
+.md.pos{color:var(--green)}.md.neg{color:var(--red)}.md.neu{color:var(--text2)}
+
+/* SECTION LABEL */
+.slabel{font-family:var(--mono);font-size:.57rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text2);margin-bottom:.75rem;
+  display:flex;align-items:center;gap:10px}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* CHARTS */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.cgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem}
+.chwrap{position:relative;height:200px}
+
+/* TABLES */
+.ctable,.atable{width:100%;border-collapse:collapse}
+.ctable th,.atable th{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text2);padding:8px 14px;
+  text-align:left;border-bottom:1px solid var(--border)}
+.ctable th:not(:first-child),.atable th:not(:first-child){text-align:right}
+.ctable td,.atable td{padding:9px 14px;font-size:.77rem;border-bottom:1px solid var(--border)}
+.ctable td:not(:first-child),.atable td:not(:first-child){text-align:right;font-family:var(--mono)}
+.ctable tr:last-child td,.atable tr:last-child td{border-bottom:none}
+.ctable tr:hover td,.atable tr:hover td{background:rgba(255,255,255,.02)}
+.td-name{color:var(--text2);font-family:var(--sans)}.td-b{color:var(--text2)}.td-a{color:var(--text)}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:.57rem;
+  padding:2px 7px;border-radius:2px}
+.badge.up{background:rgba(34,197,94,.12);color:var(--green)}
+.badge.dn{background:rgba(239,68,68,.12);color:var(--red)}
+.badge.flat{background:rgba(255,255,255,.06);color:var(--text2)}
+.badge.warn{background:rgba(249,115,22,.12);color:var(--orange)}
+
+/* MONTE CARLO SUMMARY */
+.mcsums{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);
+  border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.mcsum{background:var(--bg1);padding:.85rem 1rem}
+.mcsum-l{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text2);margin-bottom:4px}
+.mcsum-v{font-family:var(--serif);font-size:1.3rem;color:#fff}
+.mcsum-s{font-family:var(--mono);font-size:.59rem;color:var(--text2);margin-top:2px}
+
+/* ═══ STRESS TEST STYLES ════════════════════════════════════ */
+.stress-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.stress-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+  padding:1rem;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.stress-card:hover{border-color:var(--border2);background:var(--bg3)}
+.stress-card.selected{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.05)}
+.stress-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.sc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sc-title{font-size:.78rem;font-weight:600;color:var(--text);line-height:1.3}
+.sc-icon{font-size:1.2rem;flex-shrink:0}
+.sc-desc{font-family:var(--mono);font-size:.58rem;color:var(--text2);
+  line-height:1.5;margin-bottom:10px}
+.sc-loss{display:flex;align-items:baseline;gap:6px}
+.sc-loss-val{font-family:var(--serif);font-size:1.6rem;color:var(--red)}
+.sc-loss-val.green{color:var(--green)}
+.sc-loss-sub{font-family:var(--mono);font-size:.6rem;color:var(--text2)}
+.sc-recover{font-family:var(--mono);font-size:.62rem;margin-top:6px}
+
+/* Stress detail panel */
+.stress-detail{background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--r);padding:1.25rem;margin-top:1.5rem}
+.stress-detail-header{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem}
+.stress-detail-icon{font-size:1.8rem}
+.stress-detail-title{font-family:var(--serif);font-size:1.4rem;color:#fff}
+.stress-detail-desc{font-family:var(--mono);font-size:.65rem;color:var(--text2);margin-top:2px}
+
+.contrib-bar-wrap{margin-bottom:6px}
+.contrib-bar-label{display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:3px;font-size:.72rem}
+.contrib-bar-track{height:6px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.contrib-bar-fill{height:100%;border-radius:2px;transition:width .5s ease}
+
+.comparison-strip{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+.cs-card{background:var(--bg3);border:1px solid var(--border);
+  border-radius:4px;padding:.85rem 1rem}
+.cs-title{font-family:var(--mono);font-size:.57rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--text2);margin-bottom:.5rem}
+.cs-val{font-family:var(--serif);font-size:1.5rem;color:#fff}
+.cs-sub{font-family:var(--mono);font-size:.6rem;color:var(--text2);margin-top:3px}
+
+/* Sensitivity heatmap */
+.heatmap-wrap{overflow-x:auto}
+.heatmap-table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:.7rem}
+.heatmap-table th{padding:6px 10px;color:var(--text2);font-size:.58rem;
+  letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);
+  text-align:center;white-space:nowrap}
+.heatmap-table th:first-child{text-align:left}
+.heatmap-table td{padding:7px 10px;text-align:center;font-size:.72rem;border-bottom:1px solid var(--border)}
+.heatmap-table td:first-child{text-align:left;color:var(--text2);white-space:nowrap}
+.hm-cell{display:inline-block;padding:3px 8px;border-radius:3px;
+  font-weight:500;min-width:52px}
+
+/* Custom scenario */
+.custom-shock-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.shock-input-wrap{display:flex;flex-direction:column;gap:4px}
+.shock-input-wrap label{font-family:var(--mono);font-size:.57rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text2)}
+.shock-range{display:flex;align-items:center;gap:6px}
+.shock-range input[type=range]{flex:1;height:3px;-webkit-appearance:none;
+  background:var(--bg3);border-radius:2px;outline:none;cursor:pointer}
+.shock-range input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;
+  width:12px;height:12px;background:var(--gold);border-radius:50%}
+.shock-val{font-family:var(--mono);font-size:.7rem;min-width:42px;
+  text-align:right;color:var(--gold)}
+
+/* Color dot */
+.cdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;flex-shrink:0}
+
+/* PLACEHOLDER */
+.empty{text-align:center;padding:4rem 2rem;border:1px dashed var(--border2);border-radius:var(--r)}
+.empty-icon{font-size:2rem;opacity:.2;margin-bottom:1rem}
+.empty h3{font-family:var(--serif);font-size:1.5rem;color:var(--text2);margin-bottom:.5rem}
+.empty p{font-size:.76rem;color:var(--muted);line-height:1.7;max-width:280px;margin:0 auto}
+
+/* LOADING */
+.loading-wrap{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:4rem;gap:1rem}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:var(--mono);font-size:.72rem;color:var(--text2);letter-spacing:.1em}
+.loading-steps{display:flex;flex-direction:column;gap:4px;margin-top:.5rem}
+.ls{font-family:var(--mono);font-size:.62rem;color:var(--text2);opacity:.5;transition:opacity .3s}
+.ls.active{opacity:1;color:var(--gold)}
+
+/* ERROR */
+.err-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);
+  border-radius:var(--r);padding:1rem 1.25rem;font-family:var(--mono);
+  font-size:.75rem;color:var(--red)}
+
+/* FADE UP */
+.fu{animation:fadeUp .4s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fd1{animation-delay:.05s}.fd2{animation-delay:.1s}.fd3{animation-delay:.15s}.fd4{animation-delay:.2s}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+@media(max-width:1000px){
+  .layout{grid-template-columns:1fr}
+  .mcards{grid-template-columns:1fr 1fr}
+  .cgrid,.cgrid3{grid-template-columns:1fr}
+  .mcsums,.stress-grid{grid-template-columns:1fr 1fr}
+  .custom-shock-grid{grid-template-columns:1fr 1fr}
+  .ai-intro{flex-direction:column}
+  .ai-key-row{flex-direction:column;align-items:flex-start}
+}
+
+/* ═══ AI ADVISOR ═════════════════════════════════════════ */
+.ai-tab-btn{color:var(--gold)!important}
+.ai-tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.ai-intro{display:flex;align-items:flex-start;gap:1.1rem;
+  background:linear-gradient(135deg,rgba(201,168,76,.07) 0%,rgba(201,168,76,.02) 100%);
+  border:1px solid rgba(201,168,76,.2);border-radius:var(--r);
+  padding:1.25rem;margin-bottom:1rem}
+.ai-orb{font-size:1.6rem;color:var(--gold);flex-shrink:0;margin-top:2px;
+  animation:aiPulse 3s ease-in-out infinite}
+@keyframes aiPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.1)}}
+.ai-intro-title{font-family:var(--serif);font-size:1.2rem;color:#fff;margin-bottom:4px}
+.ai-intro-sub{font-family:var(--mono);font-size:.62rem;color:var(--text2);line-height:1.6}
+.ai-cta{flex-shrink:0;padding:10px 20px;
+  background:linear-gradient(135deg,#c9a84c,#9e7232);
+  color:#000;font-family:var(--sans);font-size:.8rem;font-weight:700;
+  border:none;border-radius:4px;cursor:pointer;letter-spacing:.04em;
+  transition:all .2s;white-space:nowrap}
+.ai-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(201,168,76,.3)}
+.ai-cta:disabled{opacity:.5;cursor:wait;transform:none}
+.ai-key-row{display:flex;align-items:center;gap:10px;padding:.75rem;
+  background:var(--bg2);border:1px solid var(--border);border-radius:4px;margin-bottom:1.25rem}
+.ai-output-wrap{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.ai-output-header{display:flex;align-items:center;justify-content:space-between;
+  padding:.8rem 1.1rem;background:var(--bg2);border-bottom:1px solid var(--border)}
+.ai-output-title{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:8px}
+.ai-streaming-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 1s infinite}
+.ai-content{padding:1.5rem 1.75rem;font-size:.85rem;line-height:1.8;
+  color:var(--text);max-height:70vh;overflow-y:auto}
+.ai-content h2{font-family:var(--serif);font-size:1.25rem;color:var(--gold);
+  margin:1.5rem 0 .6rem;border-bottom:1px solid rgba(201,168,76,.15);padding-bottom:.4rem}
+.ai-content h2:first-child{margin-top:0}
+.ai-content h3{font-family:var(--sans);font-size:.9rem;font-weight:600;color:#fff;margin:1rem 0 .4rem}
+.ai-content p{margin-bottom:.85rem;color:rgba(255,255,255,.8)}
+.ai-content ul{margin:.5rem 0 .85rem 1.2rem}
+.ai-content li{margin-bottom:.45rem;color:rgba(255,255,255,.75)}
+.ai-content li::marker{color:var(--gold)}
+.ai-content strong{color:#fff;font-weight:600}
+.ai-content code{font-family:var(--mono);font-size:.78rem;background:var(--bg3);
+  padding:1px 6px;border-radius:3px;color:var(--gold)}
+.ai-content hr{border:none;border-top:1px solid var(--border);margin:1.25rem 0}
+.ai-content em{color:var(--gold2);font-style:italic}
+.ai-cursor::after{content:'▋';color:var(--gold);animation:blink .7s infinite;font-size:.8rem}
+.ai-section-pills{display:flex;flex-wrap:wrap;gap:6px;padding:.75rem 1.1rem;
+  border-top:1px solid var(--border);background:var(--bg2)}
+.ai-pill{font-family:var(--mono);font-size:.58rem;padding:3px 10px;border-radius:2px;
+  background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.18);
+  color:var(--gold);cursor:pointer;transition:all .15s}
+.ai-pill:hover{background:rgba(201,168,76,.18)}
+.ai-disclaimer{font-family:var(--mono);font-size:.58rem;color:var(--text2);
+  padding:.6rem 1.1rem;border-top:1px solid var(--border);
+  background:var(--bg2);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div>
+    <div class="hd-title">Portfolio <em>Risk</em> Analyzer</div>
+    <div class="hd-sub">Live data · Stress Testing · Sensitivity · Monte Carlo · yfinance</div>
+  </div>
+  <div class="hd-pills">
+    <div class="pill"><span class="dot"></span>Live Market Data</div>
+    <div class="pill" id="data-badge" style="display:none"></div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ══ LEFT: INPUTS ══════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <div class="panel fu">
+      <div class="ph">
+        <span class="ph-title">Your Portfolio</span>
+        <span id="asset-count" style="font-family:var(--mono);font-size:.6rem;color:var(--text2)">4 assets</span>
+      </div>
+      <div class="pb">
+        <div class="asset-hdr">
+          <span>Asset / Ticker</span><span>Wt %</span><span></span>
+        </div>
+        <div id="asset-list"></div>
+        <button class="btn-add" onclick="addAsset()">+ Add Asset</button>
+        <div class="wstack">
+          <div class="wstack-chips" id="wchips"></div>
+          <div class="wbar" id="wbar"></div>
+          <div class="wtotal" id="wtotal">Total: 0%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel fu fd1">
+      <div class="ph">
+        <span class="ph-title">New Asset to Evaluate</span>
+        <span style="font-family:var(--mono);font-size:.58rem;color:var(--text2)">name + weight only</span>
+      </div>
+      <div class="pb">
+        <div style="display:grid;grid-template-columns:1fr 60px;gap:8px;margin-bottom:.85rem">
+          <div>
+            <label style="font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);display:block;margin-bottom:4px">Asset Name</label>
+            <input class="fi" id="new-name" placeholder="e.g. Gold, Bitcoin, HDFC Bank" value="Gold">
+          </div>
+          <div>
+            <label style="font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);display:block;margin-bottom:4px">Wt %</label>
+            <input class="wi" id="new-weight" type="number" value="10" min="1" max="50">
+          </div>
+        </div>
+        <div class="sline">
+          <span>Risk-free rate</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" id="sl-rf" min="0" max="10" step=".25" value="6.5"
+              oninput="document.getElementById('sv-rf').textContent=parseFloat(this.value).toFixed(2)+'%'">
+            <span class="sv" id="sv-rf">6.50%</span>
+          </div>
+        </div>
+        <div class="sline">
+          <span>Lookback period</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="range" id="sl-lb" min="1" max="5" step="1" value="3"
+              oninput="document.getElementById('sv-lb').textContent=this.value+'yr'">
+            <span class="sv" id="sv-lb">3yr</span>
+          </div>
+        </div>
+        <div class="sline" style="margin-bottom:.75rem">
+          <span>Investment (₹)</span>
+          <input type="number" id="inv-amt" value="100000" min="1000" step="1000">
+        </div>
+        <button class="cta" id="cta" onclick="runAnalysis()">Analyze Portfolio Impact</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ RIGHT: RESULTS ══════════════════════════════════ -->
+  <div id="results">
+    <div class="empty fu">
+      <div class="empty-icon">◈</div>
+      <h3>Add assets &amp; analyze</h3>
+      <p>Enter portfolio assets with weights, pick a new asset to evaluate, and hit Analyze. All analytics including stress tests are powered by live yfinance data.</p>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const COLORS=['#c9a84c','#60a5fa','#22c55e','#a78bfa','#f87171','#34d399','#fb923c','#e879f9','#a3e635','#2dd4bf'];
+const API='http://localhost:5000/api/analyze';
+let assets=[
+  {name:'ICICI Bank',weight:40},{name:'Reliance',weight:30},
+  {name:'Infosys',weight:20},{name:'Gold',weight:10},
+];
+let activeCharts={};
+let lastData=null;
+let selectedScenario=null;
+
+// ── ASSET LIST ─────────────────────────────────────────────
+function renderAssets(){
+  const list=document.getElementById('asset-list');
+  list.innerHTML='';
+  assets.forEach((a,i)=>{
+    const row=document.createElement('div');
+    row.className='asset-row';
+    row.innerHTML=`
+      <input class="fi" value="${a.name}" placeholder="Asset name"
+        style="border-left:2px solid ${COLORS[i%COLORS.length]}"
+        oninput="assets[${i}].name=this.value;updateWeightBar()">
+      <input class="wi" type="number" value="${a.weight}" min="0" max="100"
+        oninput="assets[${i}].weight=parseFloat(this.value)||0;updateWeightBar()">
+      <button class="btn-rm" onclick="removeAsset(${i})">×</button>`;
+    list.appendChild(row);
+  });
+  document.getElementById('asset-count').textContent=assets.length+' asset'+(assets.length!==1?'s':'');
+  updateWeightBar();
+}
+function addAsset(){assets.push({name:'',weight:5});renderAssets()}
+function removeAsset(i){if(assets.length<=1)return;assets.splice(i,1);renderAssets()}
+function updateWeightBar(){
+  const total=assets.reduce((s,a)=>s+a.weight,0);
+  const bar=document.getElementById('wbar'),chips=document.getElementById('wchips'),tot=document.getElementById('wtotal');
+  bar.innerHTML='';chips.innerHTML='';
+  assets.forEach((a,i)=>{
+    const pct=total>0?(a.weight/total)*100:0;
+    const seg=document.createElement('div');
+    seg.className='wseg';seg.style.cssText=`width:${pct}%;background:${COLORS[i%COLORS.length]}`;
+    bar.appendChild(seg);
+    const chip=document.createElement('div');
+    chip.className='wchip';chip.style.background=COLORS[i%COLORS.length];
+    chip.textContent=(a.name||'?').split(' ')[0]+' '+a.weight+'%';
+    chips.appendChild(chip);
+  });
+  tot.textContent='Total: '+total.toFixed(0)+'%';
+  tot.className='wtotal '+(Math.abs(total-100)<.5?'ok':total>100?'over':'');
+}
+
+// ── ANALYSIS ───────────────────────────────────────────────
+async function runAnalysis(){
+  const btn=document.getElementById('cta');
+  btn.textContent='Fetching market data…';btn.classList.add('busy');
+  const results=document.getElementById('results');
+  results.innerHTML=`<div class="loading-wrap">
+    <div class="spinner"></div>
+    <div class="loading-text">Pulling live prices from yfinance…</div>
+    <div class="loading-steps">
+      <div class="ls active" id="ls1">Resolving tickers…</div>
+      <div class="ls" id="ls2">Computing statistics…</div>
+      <div class="ls" id="ls3">Running stress scenarios…</div>
+      <div class="ls" id="ls4">Building efficient frontier…</div>
+    </div></div>`;
+
+  const animate=async(id,delay)=>{await new Promise(r=>setTimeout(r,delay));
+    document.getElementById(id)?.classList.add('active')};
+  animate('ls2',800);animate('ls3',1600);animate('ls4',2400);
+
+  const payload={
+    portfolio:assets.map(a=>({name:a.name,weight:a.weight})),
+    new_asset:{name:document.getElementById('new-name').value.trim(),
+      weight:parseFloat(document.getElementById('new-weight').value)||10},
+    risk_free_rate:parseFloat(document.getElementById('sl-rf').value),
+    lookback_years:parseInt(document.getElementById('sl-lb').value),
+    investment:parseFloat(document.getElementById('inv-amt').value)||100000,
+  };
+
+  try{
+    const res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Server error');
+    lastData=data;
+    renderResults(data);
+    const badge=document.getElementById('data-badge');
+    badge.textContent=`${data.lookback_years}yr · ${new Date().toLocaleTimeString()}`;
+    badge.style.display='flex';
+  }catch(e){
+    results.innerHTML=`<div class="err-box">⚠ ${e.message}<br><br>Make sure <code>app.py</code> is running: <code>python app.py</code></div>`;
+  }
+  btn.textContent='Analyze Portfolio Impact';btn.classList.remove('busy');
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────────
+function renderResults(d){
+  const B=d.before,A=d.after,mc=d.monte_carlo,inv=d.investment;
+  const fmtK=v=>'₹'+(v/1000).toFixed(0)+'k';
+  const fmtC=v=>'₹'+v.toLocaleString('en-IN',{maximumFractionDigits:0});
+
+  function delta(a,b,hi=true){
+    const diff=a-b;
+    if(Math.abs(diff)<.0005) return `<span class="badge flat">─ unchanged</span>`;
+    const pos=(diff>0&&hi)||(diff<0&&!hi);
+    return `<span class="badge ${pos?'up':'dn'}">${diff>0?'▲':'▼'} ${Math.abs(diff).toFixed(3)}</span>`;
+  }
+
+  const cards=[
+    {label:'Sharpe Ratio',    val:A.sharpe.toFixed(3),    dlt:delta(A.sharpe,B.sharpe,true),  cls:A.sharpe>B.sharpe?'pos':'neg'},
+    {label:'Expected Return', val:A.ret.toFixed(2)+'%',   dlt:delta(A.ret,B.ret,true),         cls:A.ret>B.ret?'pos':'neg'},
+    {label:'Volatility',      val:A.vol.toFixed(2)+'%',   dlt:delta(A.vol,B.vol,false),        cls:A.vol<B.vol?'pos':'neg'},
+    {label:'Max Drawdown',    val:A.max_dd.toFixed(2)+'%',dlt:delta(A.max_dd,B.max_dd,false),  cls:A.max_dd>B.max_dd?'neg':'pos'},
+  ];
+
+  const trows=[
+    ['Expected Return', B.ret.toFixed(2)+'%',    A.ret.toFixed(2)+'%',    delta(A.ret,B.ret,true)],
+    ['Volatility',      B.vol.toFixed(2)+'%',    A.vol.toFixed(2)+'%',    delta(A.vol,B.vol,false)],
+    ['Sharpe Ratio',    B.sharpe.toFixed(3),     A.sharpe.toFixed(3),     delta(A.sharpe,B.sharpe,true)],
+    ['Sortino Ratio',   B.sortino.toFixed(3),    A.sortino.toFixed(3),    delta(A.sortino,B.sortino,true)],
+    ['Calmar Ratio',    B.calmar.toFixed(3),     A.calmar.toFixed(3),     delta(A.calmar,B.calmar,true)],
+    ['VaR 95%',         B.var95.toFixed(2)+'%',  A.var95.toFixed(2)+'%',  delta(A.var95,B.var95,true)],
+    ['CVaR 95%',        B.cvar95.toFixed(2)+'%', A.cvar95.toFixed(2)+'%', delta(A.cvar95,B.cvar95,true)],
+    ['Max Drawdown',    B.max_dd.toFixed(2)+'%', A.max_dd.toFixed(2)+'%', delta(A.max_dd,B.max_dd,false)],
+  ];
+
+  // Build stress scenario cards
+  const stressAfter=d.stress.after;
+  const stressBefore=d.stress.before;
+
+  document.getElementById('results').innerHTML=`
+  <div style="display:flex;flex-direction:column;gap:1.5rem">
+
+    <!-- Metrics -->
+    <div class="fu">
+      <div class="slabel">Risk · Return Snapshot</div>
+      <div class="mcards">${cards.map(c=>`
+        <div class="mcard ${c.cls}">
+          <div class="ml">${c.label}</div>
+          <div class="mv">${c.val}</div>
+          <div class="md ${c.cls}">${c.dlt} vs before</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div>
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('analytics',this)">Analytics</button>
+        <button class="tab-btn" onclick="switchTab('stress',this)">Stress Testing</button>
+        <button class="tab-btn" onclick="switchTab('sensitivity',this)">Sensitivity</button>
+        <button class="tab-btn" onclick="switchTab('custom',this)">Custom Shock</button>
+  
+      </div>
+
+      <!-- ── ANALYTICS TAB ── -->
+      <div class="tab-pane active" id="tab-analytics">
+
+        <div class="cgrid fu fd1" style="margin-bottom:1.5rem">
+          <div class="panel">
+            <div class="ph"><span class="ph-title">Efficient Frontier</span>
+              <span style="font-family:var(--mono);font-size:.56rem;color:var(--text2)">3,000 portfolios</span></div>
+            <div class="pb"><div class="chwrap"><canvas id="ch-ef"></canvas></div></div>
+          </div>
+          <div class="panel">
+            <div class="ph"><span class="ph-title">Historical Drawdown</span>
+              <span style="font-family:var(--mono);font-size:.56rem;color:var(--text2)">${d.lookback_years}yr</span></div>
+            <div class="pb"><div class="chwrap"><canvas id="ch-dd"></canvas></div></div>
+          </div>
+        </div>
+
+        <div class="panel fu fd2" style="margin-bottom:1.5rem">
+          <div class="ph"><span class="ph-title">Before vs After — Full Metrics</span></div>
+          <div style="padding:0">
+            <table class="ctable">
+              <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Impact</th></tr></thead>
+              <tbody>${trows.map(([l,b,a,dlt])=>`
+                <tr><td class="td-name">${l}</td><td class="td-b">${b}</td>
+                  <td class="td-a">${a}</td><td>${dlt}</td></tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel fu fd2" style="margin-bottom:1.5rem">
+          <div class="ph"><span class="ph-title">Asset-Level Stats (yfinance)</span>
+            <span style="font-family:var(--mono);font-size:.56rem;color:var(--text2)">Annualised · ${d.lookback_years}yr</span></div>
+          <div style="padding:0">
+            <table class="atable">
+              <thead><tr><th>Asset</th><th>Ticker</th><th>Class</th><th>Weight</th><th>Ann. Return</th><th>Ann. Vol</th></tr></thead>
+              <tbody>${d.asset_stats.map((a,i)=>`
+                <tr>
+                  <td><span class="cdot" style="background:${COLORS[i%COLORS.length]}"></span>${a.name}</td>
+                  <td style="font-family:var(--mono);font-size:.68rem;color:var(--text2)">${a.ticker}</td>
+                  <td><span class="badge flat">${a.class}</span></td>
+                  <td style="font-family:var(--mono);color:var(--gold)">${a.weight.toFixed(1)}%</td>
+                  <td style="color:${a.ret>=0?'var(--green)':'var(--red)'}">${a.ret.toFixed(2)}%</td>
+                  <td style="color:var(--text2)">${a.vol.toFixed(2)}%</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel fu fd3">
+          <div class="ph">
+            <span class="ph-title">Monte Carlo — 10 Year Forecast</span>
+            <span style="font-family:var(--mono);font-size:.56rem;color:var(--text2)">600 GBM paths</span>
+          </div>
+          <div class="pb">
+            <div class="chwrap" style="height:230px"><canvas id="ch-mc"></canvas></div>
+            <div class="mcsums" style="margin-top:1rem">
+              <div class="mcsum"><div class="mcsum-l">Median</div>
+                <div class="mcsum-v">${fmtK(mc.final_p50)}</div>
+                <div class="mcsum-s">50th percentile</div></div>
+              <div class="mcsum"><div class="mcsum-l">P90 · best 10%</div>
+                <div class="mcsum-v" style="color:var(--green)">${fmtK(mc.final_p90)}</div>
+                <div class="mcsum-s">upside</div></div>
+              <div class="mcsum"><div class="mcsum-l">P10 · worst 10%</div>
+                <div class="mcsum-v" style="color:var(--red)">${fmtK(mc.final_p10)}</div>
+                <div class="mcsum-s">downside</div></div>
+              <div class="mcsum"><div class="mcsum-l">Prob. of loss</div>
+                <div class="mcsum-v" style="color:${mc.prob_loss>25?'var(--red)':'var(--gold)'}">${mc.prob_loss.toFixed(1)}%</div>
+                <div class="mcsum-s">over 10 years</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STRESS TAB ── -->
+      <div class="tab-pane" id="tab-stress">
+        <div style="font-family:var(--mono);font-size:.62rem;color:var(--text2);margin-bottom:1rem;line-height:1.6">
+          Click any scenario to see asset-level breakdown and compare before vs after impact.
+          Shocks are scaled by asset class and volatility-adjusted beta.
+        </div>
+        <div class="stress-grid" id="stress-cards"></div>
+        <div id="stress-detail"></div>
+
+        <!-- Stress bar chart -->
+        <div class="panel" style="margin-top:1.5rem">
+          <div class="ph"><span class="ph-title">All Scenarios — Portfolio Loss Comparison</span>
+            <span style="font-family:var(--mono);font-size:.56rem;color:var(--text2)">Before vs After adding new asset</span></div>
+          <div class="pb"><div class="chwrap" style="height:280px"><canvas id="ch-stress-bar"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- ── SENSITIVITY TAB ── -->
+      <div class="tab-pane" id="tab-sensitivity">
+        <div style="font-family:var(--mono);font-size:.62rem;color:var(--text2);margin-bottom:1rem;line-height:1.6">
+          Sharpe ratio change when each asset's weight shifts by ±5%, ±10%, ±20% (portfolio renormalised).
+          Green = improves Sharpe. Red = hurts Sharpe.
+        </div>
+        <div class="panel" style="margin-bottom:1.5rem">
+          <div class="ph"><span class="ph-title">Sharpe Ratio Sensitivity Heatmap</span></div>
+          <div class="pb">
+            <div class="heatmap-wrap">
+              <table class="heatmap-table" id="sensitivity-table"></table>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="ph-title">Sensitivity — Return & Volatility Impact</span></div>
+          <div class="pb"><div class="chwrap" style="height:240px"><canvas id="ch-sensitivity"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- ── AI ADVISOR TAB ── -->
+      <div class="tab-pane" id="tab-ai">
+        <div id="ai-pane">
+          <div class="ai-intro">
+            <div class="ai-intro-icon">✦</div>
+            <div>
+              <div class="ai-intro-title">AI Portfolio Advisor</div>
+              <div class="ai-intro-sub">Powered by Claude · Analyzes your full portfolio data, stress tests, and sensitivity to generate personalized recommendations.</div>
+            </div>
+            <button class="ai-cta" id="ai-btn" onclick="getAIRecommendations()">
+              <span id="ai-btn-text">Generate Recommendations</span>
+            </button>
+          </div>
+          </div>
+          <div id="ai-output" style="display:none"></div>
+        </div>
+      </div>
+      <div class="tab-pane" id="tab-custom">
+        <div style="font-family:var(--mono);font-size:.62rem;color:var(--text2);margin-bottom:1rem;line-height:1.6">
+          Define your own shock scenario by setting custom percentage shocks per asset class.
+        </div>
+        <div class="panel" style="margin-bottom:1.5rem">
+          <div class="ph"><span class="ph-title">Custom Shock Inputs</span></div>
+          <div class="pb">
+            <div class="custom-shock-grid">
+              ${[['equity','Equities','-25'],['bond','Bonds','-5'],['gold','Gold','5'],
+                 ['oil','Oil','-30'],['crypto','Crypto','-50'],['reit','REITs','-20']].map(([k,l,def])=>`
+                <div class="shock-input-wrap">
+                  <label>${l} shock %</label>
+                  <div class="shock-range">
+                    <input type="range" id="cs-${k}" min="-90" max="100" step="1" value="${def}"
+                      oninput="document.getElementById('csv-${k}').textContent=this.value+'%';computeCustom()">
+                    <span class="shock-val" id="csv-${k}">${def}%</span>
+                  </div>
+                </div>`).join('')}
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem" id="custom-results"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="ph"><span class="ph-title">Custom Scenario — Asset Contributions</span></div>
+          <div class="pb"><div id="custom-contributions"></div></div>
+        </div>
+      </div>
+
+      <!-- ── AI ADVISOR TAB ── -->
+      <div class="tab-pane" id="tab-ai">
+        <div class="ai-intro">
+          <div class="ai-orb">✦</div>
+          <div style="flex:1">
+            <div class="ai-intro-title">AI Portfolio Advisor</div>
+            <div class="ai-intro-sub">Gemini analyzes your complete portfolio data — metrics, stress tests, sensitivity, Monte Carlo — and generates a personalized investment advisory report.</div>
+          </div>
+          <button class="ai-cta" id="ai-btn" onclick="getAIRecommendations()">
+            <span id="ai-btn-text">✦ Generate Report</span>
+          </button>
+        </div>
+        <div class="ai-key-row">
+          <span style="font-family:var(--mono);font-size:.58rem;color:var(--text2);white-space:nowrap">GEMINI API KEY</span>
+          <input type="password" class="fi" id="ai-key"
+            placeholder="AIza... — free key at aistudio.google.com/apikey"
+            style="font-family:var(--mono);font-size:.72rem">
+          <span style="font-family:var(--mono);font-size:.57rem;color:var(--text2);white-space:nowrap">or set <code style="color:var(--gold)">GEMINI_API_KEY</code> env var</span>
+        </div>
+        <div id="ai-output"></div>
+      </div>
+
+    </div>
+  </div>`;
+
+  // Destroy old charts
+  Object.values(activeCharts).forEach(c=>c.destroy());
+  activeCharts={};
+
+  const co={
+    sX:{ticks:{color:'rgba(255,255,255,.27)',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(255,255,255,.05)'}},
+    sY:{ticks:{color:'rgba(255,255,255,.27)',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(255,255,255,.05)'}},
+  };
+
+  // ── Efficient Frontier ────────────────────
+  const ef=d.frontier,mi=ef.max_sharpe_idx;
+  activeCharts.ef=new Chart(document.getElementById('ch-ef'),{
+    type:'scatter',
+    data:{datasets:[
+      {data:ef.vols.map((v,i)=>({x:v,y:ef.rets[i]})),
+        backgroundColor:ef.sharpes.map(s=>{
+          const mn=Math.min(...ef.sharpes),mx=Math.max(...ef.sharpes);
+          const t=(s-mn)/(mx-mn+.001);
+          return `rgba(${Math.round(201-141*t)},${Math.round(168+t*50)},${Math.round(76+t*150)},0.5)`;
+        }),pointRadius:2.5},
+      {data:[{x:B.vol,y:B.ret}],pointBackgroundColor:'#888780',pointBorderColor:'#07080b',pointBorderWidth:2,pointRadius:9,label:'Before'},
+      {data:[{x:A.vol,y:A.ret}],pointBackgroundColor:'#60a5fa',pointBorderColor:'#07080b',pointBorderWidth:2,pointRadius:9,label:'After'},
+      {data:[{x:ef.vols[mi],y:ef.rets[mi]}],pointBackgroundColor:'#22c55e',pointBorderColor:'#07080b',pointBorderWidth:2,pointRadius:12,pointStyle:'star',label:'Max Sharpe'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Risk:${ctx.raw.x?.toFixed(1)}%  Ret:${ctx.raw.y?.toFixed(1)}%`}}},
+      scales:{x:{...co.sX,title:{display:true,text:'Volatility (%)',color:'rgba(255,255,255,.2)',font:{size:9}}},
+              y:{...co.sY,title:{display:true,text:'Return (%)',color:'rgba(255,255,255,.2)',font:{size:9}}}}}
+  });
+
+  // ── Drawdown ──────────────────────────────
+  const dd=d.drawdown;
+  activeCharts.dd=new Chart(document.getElementById('ch-dd'),{
+    type:'line',
+    data:{
+      labels:dd.before.dates,
+      datasets:[
+        {data:dd.before.values,borderColor:'rgba(136,135,128,0.7)',borderWidth:1.5,
+          pointRadius:0,fill:'origin',backgroundColor:'rgba(136,135,128,0.06)',tension:.3,label:'Before'},
+        {data:dd.after.values,borderColor:'rgba(239,68,68,0.7)',borderWidth:1.5,
+          pointRadius:0,fill:'origin',backgroundColor:'rgba(239,68,68,0.06)',tension:.3,label:'After'},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.raw?.toFixed(2)}%`}}},
+      scales:{x:{...co.sX,ticks:{...co.sX.ticks,maxTicksLimit:5}},
+              y:{...co.sY,ticks:{...co.sY.ticks,callback:v=>v.toFixed(0)+'%'}}}}
+  });
+
+  // ── Monte Carlo ───────────────────────────
+  activeCharts.mc=new Chart(document.getElementById('ch-mc'),{
+    type:'line',
+    data:{labels:mc.labels,datasets:[
+      {data:mc.p90,borderColor:'rgba(34,197,94,.6)',borderWidth:1.5,pointRadius:0,fill:'+1',backgroundColor:'rgba(34,197,94,.05)',tension:.4},
+      {data:mc.p50,borderColor:'#60a5fa',borderWidth:2,pointRadius:0,fill:false,tension:.4},
+      {data:mc.p10,borderColor:'rgba(239,68,68,.6)',borderWidth:1.5,pointRadius:0,fill:false,tension:.4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{...co.sX},y:{...co.sY,ticks:{...co.sY.ticks,callback:v=>'₹'+Math.round(v/1000)+'k'}}}}
+  });
+
+  // ── Stress Cards ──────────────────────────
+  renderStressCards(stressAfter,stressBefore,fmtC);
+
+  // ── Stress Bar Chart ─────────────────────
+  renderStressBar(stressAfter,stressBefore);
+
+  // ── Sensitivity ───────────────────────────
+  renderSensitivity(d.sensitivity);
+
+  // ── Custom Shock (initial compute) ────────
+  computeCustom();
+}
+
+// ── TABS ───────────────────────────────────────────────────
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// ── STRESS CARDS ───────────────────────────────────────────
+function renderStressCards(stressAfter,stressBefore,fmtC){
+  const grid=document.getElementById('stress-cards');
+  if(!grid)return;
+  grid.innerHTML=stressAfter.map((s,i)=>{
+    const sb=stressBefore.find(x=>x.name===s.name)||s;
+    const lossPct=s.portfolio_loss_pct;
+    const color=s.color;
+    return `<div class="stress-card" id="sc-${i}" onclick="showStressDetail(${i})"
+      style="--sc:${color}">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${color}"></div>
+      <div class="sc-header">
+        <div class="sc-title">${s.name}</div>
+        <div class="sc-icon">${s.icon}</div>
+      </div>
+      <div class="sc-desc">${s.description}</div>
+      <div class="sc-loss">
+        <div class="sc-loss-val ${lossPct>=0?'green':''}">${lossPct.toFixed(1)}%</div>
+        <div class="sc-loss-sub">${lossPct<0?'portfolio loss':'portfolio gain'}</div>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:12px">
+        <div style="font-family:var(--mono);font-size:.6rem;color:var(--text2)">
+          Before: <span style="color:${sb.portfolio_loss_pct<0?'var(--red)':'var(--green)'}">${sb.portfolio_loss_pct.toFixed(1)}%</span>
+        </div>
+        <div style="font-family:var(--mono);font-size:.6rem;color:var(--text2)">
+          ${s.recovery_months>0?`Recovery: <span style="color:var(--gold)">${s.recovery_months}mo</span>`:'No recovery needed'}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showStressDetail(idx){
+  if(!lastData)return;
+  document.querySelectorAll('.stress-card').forEach((c,i)=>
+    c.classList.toggle('selected',i===idx));
+
+  const s=lastData.stress.after[idx];
+  const sb=lastData.stress.before[idx];
+  const inv=lastData.investment;
+  const fmtC=v=>'₹'+v.toLocaleString('en-IN',{maximumFractionDigits:0});
+
+  const impacts=Object.entries(s.asset_impacts).sort((a,b)=>a[1].shock_pct-b[1].shock_pct);
+  const maxAbs=Math.max(...impacts.map(([,v])=>Math.abs(v.contribution)));
+
+  const detail=document.getElementById('stress-detail');
+  detail.innerHTML=`
+  <div class="stress-detail fu" style="border-color:${s.color}40">
+    <div class="stress-detail-header">
+      <div class="stress-detail-icon">${s.icon}</div>
+      <div>
+        <div class="stress-detail-title">${s.name}</div>
+        <div class="stress-detail-desc">${s.description}</div>
+      </div>
+    </div>
+
+    <div class="comparison-strip">
+      <div class="cs-card">
+        <div class="cs-title">Portfolio Before</div>
+        <div class="cs-val" style="color:${sb.portfolio_loss_pct<0?'var(--red)':'var(--green)'}">${sb.portfolio_loss_pct.toFixed(2)}%</div>
+        <div class="cs-sub">${fmtC(sb.portfolio_loss_amt)} P&amp;L · Survival: ${fmtC(sb.survival_value)}</div>
+      </div>
+      <div class="cs-card" style="border-color:${s.color}40">
+        <div class="cs-title">Portfolio After (with new asset)</div>
+        <div class="cs-val" style="color:${s.portfolio_loss_pct<0?'var(--red)':'var(--green)'}">${s.portfolio_loss_pct.toFixed(2)}%</div>
+        <div class="cs-sub">${fmtC(s.portfolio_loss_amt)} P&amp;L · Survival: ${fmtC(s.survival_value)}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:1.25rem">
+      <div class="slabel">Asset-Level Shock Contributions</div>
+      ${impacts.map(([ticker,imp])=>{
+        const barW=maxAbs>0?Math.abs(imp.contribution)/maxAbs*100:0;
+        const barColor=imp.shock_pct<0?'var(--red)':imp.shock_pct>0?'var(--green)':'var(--text2)';
+        return `<div class="contrib-bar-wrap">
+          <div class="contrib-bar-label">
+            <span style="display:flex;align-items:center;gap:6px">
+              <span class="badge flat">${imp.asset_class}</span>
+              <span style="font-family:var(--mono);font-size:.7rem">${ticker}</span>
+              <span style="font-size:.7rem;color:var(--text2)">Wt: ${imp.weight.toFixed(1)}%</span>
+            </span>
+            <span style="font-family:var(--mono);font-size:.7rem;color:${barColor}">
+              ${imp.shock_pct.toFixed(1)}% shock → ${imp.contribution.toFixed(2)}% contrib
+            </span>
+          </div>
+          <div class="contrib-bar-track">
+            <div class="contrib-bar-fill" style="width:${barW}%;background:${barColor}"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${s.recovery_months>0?`
+    <div style="margin-top:1rem;padding:.75rem;background:var(--bg3);border-radius:4px;
+      font-family:var(--mono);font-size:.65rem;color:var(--text2);display:flex;align-items:center;gap:8px">
+      <span style="color:var(--gold);font-size:.9rem">⏱</span>
+      Estimated recovery time: <span style="color:var(--gold);font-weight:500">${s.recovery_months} months</span>
+      (${(s.recovery_months/12).toFixed(1)} years) at current expected return
+    </div>`:''}
+  </div>`;
+}
+
+// ── STRESS BAR CHART ────────────────────────────────────────
+function renderStressBar(stressAfter,stressBefore){
+  const el=document.getElementById('ch-stress-bar');
+  if(!el)return;
+  if(activeCharts.stressBar)activeCharts.stressBar.destroy();
+  const labels=stressAfter.map(s=>s.name.replace(/ \(.*?\)/,'').substring(0,22));
+  const before=stressBefore.map(s=>s.portfolio_loss_pct);
+  const after=stressAfter.map(s=>s.portfolio_loss_pct);
+  activeCharts.stressBar=new Chart(el,{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Before',data:before,backgroundColor:'rgba(136,135,128,0.55)',borderRadius:2},
+      {label:'After', data:after, backgroundColor:stressAfter.map(s=>s.color+'99'),borderRadius:2},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:true,labels:{color:'rgba(255,255,255,.5)',font:{size:10,family:'JetBrains Mono'},boxWidth:10}}},
+      scales:{
+        x:{ticks:{color:'rgba(255,255,255,.27)',font:{size:9,family:'JetBrains Mono'},callback:v=>v+'%'},
+           grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9,family:'JetBrains Mono'}},
+           grid:{display:false}}
+      }}
+  });
+}
+
+// ── SENSITIVITY ─────────────────────────────────────────────
+function renderSensitivity(sens){
+  // Heatmap table
+  const tbl=document.getElementById('sensitivity-table');
+  if(!tbl)return;
+  const shifts=sens.shifts;
+  tbl.innerHTML=`<thead><tr>
+    <th>Asset</th>
+    ${shifts.map(s=>`<th>${s>0?'+':''}${s}%</th>`).join('')}
+  </tr></thead>
+  <tbody>
+    ${sens.data.map(row=>`<tr>
+      <td>${row.ticker.replace('.NS','').replace('-USD','')}</td>
+      ${row.shifts.map(sh=>{
+        if(!sh) return '<td>—</td>';
+        const v=sh.sharpe_delta;
+        const intensity=Math.min(Math.abs(v)/0.1,1);
+        const bg=v>0
+          ?`rgba(34,197,94,${0.08+intensity*0.35})`
+          :`rgba(239,68,68,${0.08+intensity*0.35})`;
+        const color=v>0?'#86efac':'#fca5a5';
+        return `<td><span class="hm-cell" style="background:${bg};color:${color}">${v>=0?'+':''}${v.toFixed(3)}</span></td>`;
+      }).join('')}
+    </tr>`).join('')}
+  </tbody>`;
+
+  // Line chart: return & vol delta for first two assets
+  const el=document.getElementById('ch-sensitivity');
+  if(!el)return;
+  if(activeCharts.sens)activeCharts.sens.destroy();
+  const labels=shifts.map(s=>(s>0?'+':'')+s+'%');
+  const datasets=sens.data.slice(0,5).map((row,i)=>({
+    label:row.ticker.replace('.NS','').replace('-USD',''),
+    data:row.shifts.map(sh=>sh?sh.sharpe_delta:null),
+    borderColor:COLORS[i%COLORS.length],
+    borderWidth:1.5,pointRadius:3,fill:false,tension:.3,
+    spanGaps:true,
+  }));
+  activeCharts.sens=new Chart(el,{
+    type:'line',
+    data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10,family:'JetBrains Mono'},boxWidth:10}}},
+      scales:{
+        x:{ticks:{color:'rgba(255,255,255,.27)',font:{size:9,family:'JetBrains Mono'}},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'rgba(255,255,255,.27)',font:{size:9,family:'JetBrains Mono'},callback:v=>v.toFixed(3)},
+           grid:{color:'rgba(255,255,255,.05)'},
+           title:{display:true,text:'Sharpe Δ',color:'rgba(255,255,255,.2)',font:{size:9}}}
+      }}
+  });
+}
+
+// ── CUSTOM SHOCK ────────────────────────────────────────────
+function computeCustom(){
+  if(!lastData)return;
+  const shocks={
+    equity:parseFloat(document.getElementById('cs-equity')?.value||'-25')/100,
+    bond:  parseFloat(document.getElementById('cs-bond')?.value||'-5')/100,
+    gold:  parseFloat(document.getElementById('cs-gold')?.value||'5')/100,
+    oil:   parseFloat(document.getElementById('cs-oil')?.value||'-30')/100,
+    crypto:parseFloat(document.getElementById('cs-crypto')?.value||'-50')/100,
+    reit:  parseFloat(document.getElementById('cs-reit')?.value||'-20')/100,
+  };
+
+  const stats=lastData.asset_stats;
+  const inv=lastData.investment;
+  let totalLoss=0;
+  const contribs=[];
+
+  stats.forEach(a=>{
+    const shock=shocks[a.class]||shocks.equity;
+    const w=a.weight/100;
+    const contrib=w*shock*100;
+    totalLoss+=w*shock;
+    contribs.push({name:a.name,ticker:a.ticker,class:a.class,
+      weight:a.weight,shock:shock*100,contrib,lossAmt:w*shock*inv});
+  });
+
+  const survivalVal=inv*(1+totalLoss);
+  const fmtC=v=>'₹'+v.toLocaleString('en-IN',{maximumFractionDigits:0});
+
+  const res=document.getElementById('custom-results');
+  if(res) res.innerHTML=`
+    <div class="cs-card">
+      <div class="cs-title">Portfolio P&L</div>
+      <div class="cs-val" style="color:${totalLoss<0?'var(--red)':'var(--green)'}">${(totalLoss*100).toFixed(2)}%</div>
+      <div class="cs-sub">${fmtC(totalLoss*inv)} impact</div>
+    </div>
+    <div class="cs-card">
+      <div class="cs-title">Survival Value</div>
+      <div class="cs-val">${fmtC(survivalVal)}</div>
+      <div class="cs-sub">from ${fmtC(inv)}</div>
+    </div>`;
+
+  const cc=document.getElementById('custom-contributions');
+  if(!cc)return;
+  const maxAbs=Math.max(...contribs.map(c=>Math.abs(c.contrib)));
+  cc.innerHTML=contribs.sort((a,b)=>a.contrib-b.contrib).map(c=>{
+    const barW=maxAbs>0?Math.abs(c.contrib)/maxAbs*100:0;
+    const col=c.shock<0?'var(--red)':c.shock>0?'var(--green)':'var(--text2)';
+    return `<div class="contrib-bar-wrap">
+      <div class="contrib-bar-label">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span class="badge flat">${c.class}</span>
+          <span style="font-family:var(--mono);font-size:.7rem">${c.name}</span>
+          <span style="font-size:.7rem;color:var(--text2)">Wt: ${c.weight.toFixed(1)}%</span>
+        </span>
+        <span style="font-family:var(--mono);font-size:.7rem;color:${col}">
+          ${c.shock.toFixed(1)}% shock → ${c.contrib.toFixed(2)}% contrib
+        </span>
+      </div>
+      <div class="contrib-bar-track">
+        <div class="contrib-bar-fill" style="width:${barW}%;background:${col}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── AI RECOMMENDATIONS ──────────────────────────────────────
+async function getAIRecommendations(){
+  if(!lastData){
+    alert('Please run an analysis first.');
+    return;
+  }
+
+  const btn=document.getElementById('ai-btn');
+  const out=document.getElementById('ai-output');
+  const apiKey=document.getElementById('ai-key')?.value?.trim();
+
+  btn.disabled=true;
+  document.getElementById('ai-btn-text').textContent='Generating…';
+
+  // Pass API key via header if provided in UI
+  const headers={'Content-Type':'application/json'};
+  if(apiKey) headers['X-API-Key']=apiKey;
+
+  // Send full analysis data to backend for AI processing
+  const payload={...lastData};
+
+  out.innerHTML=`
+    <div class="ai-output-wrap fu">
+      <div class="ai-output-header">
+        <div class="ai-output-title">
+          <span class="ai-streaming-dot" id="stream-dot"></span>
+          AI Advisory Report — Gemini
+        </div>
+        <span style="font-family:var(--mono);font-size:.58rem;color:var(--text2)" id="ai-status">Streaming…</span>
+      </div>
+      <div class="ai-content" id="ai-md"><span class="ai-cursor"></span></div>
+      <div class="ai-disclaimer">⚠ This is AI-generated analysis for informational purposes only. Not financial advice. Past performance does not guarantee future results.</div>
+    </div>`;
+
+  const mdEl=document.getElementById('ai-md');
+  let rawText='';
+
+  try{
+    const resp=await fetch('http://localhost:5000/api/recommend',{
+      method:'POST',headers,body:JSON.stringify(payload)
+    });
+
+    if(!resp.ok){
+      const err=await resp.json();
+      throw new Error(err.error||'Server error');
+    }
+
+    const reader=resp.body.getReader();
+    const dec=new TextDecoder();
+    let buf='';
+
+    while(true){
+      const{done,value}=await reader.read();
+      if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');
+      buf=lines.pop();
+
+      for(const line of lines){
+        if(!line.startsWith('data:')) continue;
+        const payload_str=line.slice(5).trim();
+        if(payload_str==='[DONE]') break;
+        try{
+          const chunk=JSON.parse(payload_str);
+          if(chunk.text){
+            rawText+=chunk.text;
+            mdEl.innerHTML=renderMarkdown(rawText)+'<span class="ai-cursor"></span>';
+            mdEl.scrollTop=mdEl.scrollHeight;
+          }
+        }catch(_){}
+      }
+    }
+
+    // Final render without cursor
+    mdEl.innerHTML=renderMarkdown(rawText);
+
+    // Add section pills for quick navigation
+    const sections=[...mdEl.querySelectorAll('h2')];
+    if(sections.length>0){
+      const wrap=document.createElement('div');
+      wrap.className='ai-section-pills';
+      sections.forEach(h=>{
+        const pill=document.createElement('button');
+        pill.className='ai-pill';
+        pill.textContent=h.textContent;
+        pill.onclick=()=>h.scrollIntoView({behavior:'smooth',block:'start'});
+        wrap.appendChild(pill);
+      });
+      mdEl.closest('.ai-output-wrap').insertBefore(wrap,mdEl);
+    }
+
+    document.getElementById('ai-status').textContent='Complete · '+new Date().toLocaleTimeString();
+    document.getElementById('stream-dot')?.remove();
+
+  }catch(e){
+    out.innerHTML=`<div class="err-box">⚠ ${e.message}<br><br>
+      Make sure app.py is running and GEMINI_API_KEY is set.<br>
+      <code>export GEMINI_API_KEY=AIza...</code></div>`;
+  }
+
+  btn.disabled=false;
+  document.getElementById('ai-btn-text').textContent='✦ Generate Report';
+}
+
+// Simple markdown → HTML renderer
+function renderMarkdown(md){
+  return md
+    // h2
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    // h3
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    // hr
+    .replace(/^---$/gm,'<hr>')
+    // bold
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    // italic
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    // inline code
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    // bullet list items — collect consecutive ones into <ul>
+    .replace(/(^[\s]*[-•] .+$\n?)+/gm, match=>{
+      const items=match.trim().split('\n').map(l=>`<li>${l.replace(/^[\s]*[-•] /,'')}</li>`).join('');
+      return `<ul>${items}</ul>`;
+    })
+    // paragraphs (lines with content not already wrapped)
+    .split('\n\n')
+    .map(block=>{
+      block=block.trim();
+      if(!block) return '';
+      if(/^<(h[23]|ul|hr|li)/.test(block)) return block;
+      return `<p>${block.replace(/\n/g,' ')}</p>`;
+    })
+    .join('\n');
+}
+
+// ── INIT ────────────────────────────────────────────────────
+renderAssets();
+</script>
+</body>
+</html>
